@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +23,7 @@ import co.com.jwtrolebasedauthjpa.repository.IRoleRepository;
 import co.com.jwtrolebasedauthjpa.service.IUserService;
 
 @RestController
-@RequestMapping
+@RequestMapping("/users")
 public class UserController {
 
 	@Autowired
@@ -29,20 +31,24 @@ public class UserController {
 	
 	@Autowired 
 	private IRoleRepository roleRepository;
-			
-	@GetMapping("/users")
+		
+	@GetMapping("/show")
+	@PreAuthorize("hasRole('ADMIN')")
 	public List<User> findAll(){
 		return userService.findAll();
 	}
 	
-	@GetMapping("/users/{id}")
+	@GetMapping("/show/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public User findById(@PathVariable Integer id) {
 		return userService.findById(id);
 	}
 	
-	@PostMapping("/users/save")
-	public ResponseEntity<String> save(@RequestBody User user) {	
-				
+	@PostMapping("/save")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<String> save(@RequestBody User user, 
+			BCryptPasswordEncoder encoder) {	
+						
 		List<Role> roles = user.getRoles();
 		List<Integer> idRole = new ArrayList<>();
 		
@@ -50,8 +56,9 @@ public class UserController {
 			idRole.add(role.getId());
 			System.out.println("roles: " + idRole);
 		}
-		
+			
 		user.setRoles(roleRepository.findAllById(idRole));
+		user.setPassword(encoder.encode(user.getPassword()));
 				
 		userService.save(user);
 		
@@ -60,7 +67,9 @@ public class UserController {
 	}
 	
 	@PutMapping("/edit/{id}")
-	public ResponseEntity<String> edit(@PathVariable Integer id, @RequestBody User user) {
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<String> edit(@PathVariable Integer id, 
+			@RequestBody User user, BCryptPasswordEncoder encoder) {
 		
 		User userById = userService.findById(id);
 		List<Role> roles = user.getRoles();
@@ -70,11 +79,9 @@ public class UserController {
 			idRole.add(role.getId());
 		}
 		
-		
 		userById.setUsername(user.getUsername());
-		userById.setPassword(user.getPassword());
+		userById.setPassword(encoder.encode(user.getPassword()));
 		userById.setRoles(roleRepository.findAllById(idRole));
-		
 		
 		userService.save(userById);
 		
@@ -82,7 +89,8 @@ public class UserController {
 		+ userById.getId() + ", have been saved successfully.", HttpStatus.OK);
 	}
 	
-	@DeleteMapping("/users/delete/{id}")
+	@DeleteMapping("/delete/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<String> delete(@PathVariable Integer id) {
 		
 		User userById = userService.findById(id);

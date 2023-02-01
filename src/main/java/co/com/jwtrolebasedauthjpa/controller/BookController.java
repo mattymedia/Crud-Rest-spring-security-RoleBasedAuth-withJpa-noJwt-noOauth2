@@ -8,6 +8,8 @@ import java.util.Locale;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,30 +23,31 @@ import co.com.jwtrolebasedauthjpa.model.Book;
 import co.com.jwtrolebasedauthjpa.service.IBookService;
 
 @RestController
-@RequestMapping
+@CrossOrigin("*")
+@RequestMapping("/books")
 public class BookController {
 
 	@Autowired
 	private IBookService bookService;
 	
-	@GetMapping
+	@GetMapping("/home")
 	public String home() {
-				
-		return "welcome, " + formatString();
+		return "welcome to the api!!";
 	}
 	
-	@GetMapping("/books")
+	@GetMapping("/show")
 	public List<Book> findAll(){		
 		return bookService.findAll();	
 	}
-	
-	@GetMapping("/books/{id}")
+
+	@GetMapping("/show/{id}")
 	public Book findById(@PathVariable Integer id){
 				
 		return bookService.findById(id);
 	}
 	
-	@PostMapping("/books/save")
+	@PostMapping("/save")
+	@PreAuthorize("hasRole('USER')")
 	public ResponseEntity<String> save(@RequestBody Book book) {
 		
 		bookService.save(book);
@@ -54,7 +57,8 @@ public class BookController {
 				+ ", have been saved successfully.", HttpStatus.OK);
 	}
 	
-	@PutMapping("/books/edit/{id}")
+	@PutMapping("/edit/{id}")
+	@PreAuthorize("hasRole('USER')")
 	public ResponseEntity<String> edit(@PathVariable Integer id, @RequestBody Book book){
 		
 		Book bookById = bookService.findById(id);
@@ -69,7 +73,8 @@ public class BookController {
 		+ bookById.getTitle() + "', have been saved successfully.", HttpStatus.OK);
 	}
 	
-	@DeleteMapping("/books/delete/{id}")
+	@DeleteMapping("/delete/{id}")
+	@PreAuthorize("hasRole('USER')")
 	public ResponseEntity<String> delete(@PathVariable Integer id){
 		
 		Book bookById = bookService.findById(id);
